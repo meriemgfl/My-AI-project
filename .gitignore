@@ -1,0 +1,14 @@
+# Devpost Learn personal learning context
+/devpost/learner-profile.md
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Local user data
+/data/
+
+# Installed packages and build output
+/node_modules/
+/dist/

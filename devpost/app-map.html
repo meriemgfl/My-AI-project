@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skin Notes — App Map</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#392f34;background:#fbf7f5;font-synthesis:none;text-rendering:optimizeLegibility;--muted:#85777e;--line:#efdee4;--pink:#f6e8ec;--dark:#614655;--rose:#a96c81;--card:#fff}
+    *{box-sizing:border-box}body{margin:0;min-width:320px}.page{max-width:1040px;margin:0 auto;padding:42px 24px 60px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;color:var(--rose);text-transform:uppercase}.hero{max-width:720px;margin:0 auto 28px;text-align:center}.hero h1{font:400 clamp(34px,6vw,57px)/1.02 Georgia,serif;letter-spacing:-.04em;margin:12px 0;color:#493740}.hero h1 em{color:var(--rose);font-weight:400}.hero p{max-width:620px;margin:0 auto;color:var(--muted);font-size:14px;line-height:1.7}.map-label{display:flex;justify-content:space-between;gap:10px;margin:30px 0 12px;color:#977f88;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;align-items:stretch}.node{position:relative;min-height:168px;padding:16px 13px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:0 8px 22px #7954650a}.node:not(:last-child)::after{content:"→";position:absolute;z-index:2;right:-12px;top:49%;width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#eed4dc;color:#8f5c70;font-size:12px}.node-num{display:grid;width:25px;height:25px;place-items:center;border-radius:9px;background:var(--pink);color:var(--rose);font-size:10px;font-weight:800}.node h2{font:400 17px Georgia,serif;margin:13px 0 7px}.node p{margin:0;color:var(--muted);font-size:10px;line-height:1.55}.node code,.stop code{display:inline-block;margin-top:10px;padding:4px 6px;border-radius:6px;background:#faf2f4;color:#865d6d;font:9px ui-monospace,Consolas,monospace;overflow-wrap:anywhere}.section{margin-top:36px}.section h2{margin:0 0 7px;font:400 27px Georgia,serif}.section-intro{margin:0 0 16px;color:var(--muted);font-size:12px;line-height:1.65}.principles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.principle,.stop,.practice{padding:17px;border:1px solid var(--line);border-radius:16px;background:var(--card)}.principle h3,.stop h3,.practice h3{margin:0 0 7px;font-size:12px}.principle p,.stop p,.practice p{margin:0;color:var(--muted);font-size:10px;line-height:1.6}.stops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stop .path{display:block;margin-bottom:9px;color:var(--rose);font:10px ui-monospace,Consolas,monospace}.practice-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.practice ol{margin:8px 0 0;padding-left:18px;color:#665760;font-size:10px;line-height:1.8}.sql{display:block;white-space:pre-wrap;margin-top:11px;padding:12px;border-radius:11px;background:#382f35;color:#faeaf0;font:10px/1.6 ui-monospace,Consolas,monospace;overflow-wrap:anywhere}.transfer{padding:19px;border-radius:17px;background:linear-gradient(120deg,#f4e0e6,#f9efeb);color:#654a57}.transfer h3{margin:0 0 8px;font:400 20px Georgia,serif}.transfer p{margin:0;color:#765f68;font-size:11px;line-height:1.65}.footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);color:#9a8b91;font-size:9px;line-height:1.6}
+    @media(max-width:760px){.page{padding:28px 16px 40px}.flow{grid-template-columns:1fr;gap:8px}.node{min-height:0;display:grid;grid-template-columns:30px 1fr;column-gap:10px;padding:13px}.node-num{grid-row:span 3}.node h2{margin:0 0 4px}.node p{grid-column:2}.node code{grid-column:2;margin-top:6px}.node:not(:last-child)::after{content:"↓";right:16px;top:auto;bottom:-13px}.principles,.stops,.practice-grid{grid-template-columns:1fr}.map-label{margin-top:23px}.section{margin-top:27px}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">Skin Notes · Build With AI</div>
+      <h1>From your answers<br />to <em>a routine you can reopen.</em></h1>
+      <p>This map traces one complete path through the app: how your choices become a suggestion, how the database keeps it, and how Home brings it back later.</p>
+    </header>
+
+    <div class="map-label"><span>The saved-routine path</span><span>Browser → API → SQLite → Browser</span></div>
+    <section class="flow" aria-label="Saved routine flow">
+      <article class="node"><span class="node-num">01</span><h2>Your choices</h2><p>Pick concerns, shelf products, time, and days per week.</p><code>src/App.jsx · questionnaire</code></article>
+      <article class="node"><span class="node-num">02</span><h2>React screen</h2><p>Build a suggestion, then send the same answers when you save it.</p><code>createSuggestion()<br />persistRoutine()</code></article>
+      <article class="node"><span class="node-num">03</span><h2>Express API</h2><p>Checks the request and rebuilds the suggestion from owned, unexpired products.</p><code>POST /api/routines</code></article>
+      <article class="node"><span class="node-num">04</span><h2>SQLite</h2><p>Stores routine details and each ordered step with a product snapshot.</p><code>saved_routines<br />routine_steps</code></article>
+      <article class="node"><span class="node-num">05</span><h2>Open it again</h2><p>Home loads routine cards; opening one fetches its saved steps.</p><code>GET /api/routines/:id</code></article>
+    </section>
+
+    <section class="section">
+      <h2>Why the pieces are split up</h2>
+      <p class="section-intro">These boundaries make the feature easier to reason about and change.</p>
+      <div class="principles">
+        <article class="principle"><h3>The browser handles the interaction</h3><p><code>src/App.jsx</code> owns the visible screens and short-lived UI state. It asks the API to save or load; it does not write SQL.</p></article>
+        <article class="principle"><h3>The API owns the decision</h3><p><code>server/index.js</code> validates input and calls <code>buildSuggestions()</code>. Rebuilding on the server means the saved routine comes from the same rules as the shown suggestion.</p></article>
+        <article class="principle"><h3>The database keeps history</h3><p>A routine has many ordered steps. Each step stores a product snapshot, so removing a product from your shelf does not erase what an older routine said to use.</p></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>A short code tour</h2>
+      <p class="section-intro">Follow these stops in order. At each boundary, ask: what data enters, what decision happens here, and what comes out?</p>
+      <div class="stops">
+        <article class="stop"><span class="path">src/App.jsx · 105, 121, 132, 313, 321</span><h3>1 · Follow the screen</h3><p><code>createSuggestion</code> requests a recommendation. <code>persistRoutine</code> saves it. <code>openRoutine</code> loads a selected Home card. The results and detail screens render the returned data.</p></article>
+        <article class="stop"><span class="path">server/index.js · 40–63</span><h3>2 · Follow the request</h3><p>The list, detail, and create routes call data-access functions. The create route filters to owned and unexpired products, then asks the recommendation rules for the routine to persist.</p></article>
+        <article class="stop"><span class="path">server/db.js · 47–64 · data-access.js · 99–158</span><h3>3 · Follow the SQL model</h3><p><code>saved_routines</code> is the parent. <code>routine_steps</code> is the child table, with a step order and a JSON snapshot for each product.</p></article>
+      </div>
+    </section>
+
+    <section class="section practice-grid">
+      <article class="practice"><h3>Practice: read your saved steps with SQL</h3><p>This joins each routine to its child rows and sorts the steps into the order the app displays them.</p><code class="sql">SELECT r.title, r.preferred_time, s.step_order,
+       json_extract(s.product_snapshot_json, '$.name') AS product
+FROM saved_routines AS r
+JOIN routine_steps AS s ON s.routine_id = r.id
+ORDER BY r.id, s.step_order;</code></article>
+      <aside class="transfer"><h3>Carry the pattern into another app</h3><p>This same parent-and-ordered-steps design could represent a project and its steps, a recipe and its instructions, or a film watchlist and viewing order. Keep the plan as one record, and its ordered parts as related records.</p></aside>
+    </section>
+
+    <footer class="footer">Scope: local, single-device proof of concept. Suggestions are rule-based catalog matches, not clinical advice. Catalog variants and product guidance should be checked against the exact packages before relying on them.</footer>
+  </main>
+</body>
+</html>

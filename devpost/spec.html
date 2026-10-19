@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Visual technical blueprint for the Skincare Routine Personaliser proof of concept.">
+  <title>Skincare Routine Personaliser — Technical Spec</title>
+  <style>
+    :root{--ink:#252522;--muted:#696963;--paper:#fff;--wash:#f6f5f1;--line:#e7e5de;--accent:#65775d;--accent-light:#edf1e9;--peach:#f4e8df;--gold:#d9bb84;--shadow:0 16px 44px #28251d0b}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.62 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    a{color:#4f6548;text-underline-offset:3px}button{font:inherit}.wrap{max-width:1060px;margin:auto;padding:30px 22px 74px}.hero{background:var(--paper);border:1px solid var(--line);border-radius:28px;padding:clamp(26px,6vw,60px);box-shadow:var(--shadow);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-70px;top:-100px;background:var(--peach);opacity:.65}.eyebrow,.tag{font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}.eyebrow{position:relative;z-index:1}.hero h1{font:500 clamp(2rem,5vw,3.6rem)/1.08 Georgia,serif;letter-spacing:-.035em;max-width:660px;margin:18px 0}.hero p{max-width:640px;color:var(--muted);font-size:1.08rem}.status{display:inline-flex;align-items:center;gap:8px;background:#f7f0df;border:1px solid #eadfca;border-radius:999px;padding:7px 12px;font-size:.82rem;font-weight:650}.status i{height:7px;width:7px;border-radius:50%;background:#bd9451}
+    nav{display:flex;gap:8px;overflow:auto;padding:18px 2px 30px;scrollbar-width:thin}nav a{white-space:nowrap;text-decoration:none;font-size:.83rem;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 13px}nav a:hover{color:var(--ink);border-color:#b4b5a8}
+    section{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:clamp(22px,4vw,38px);margin:18px 0;box-shadow:var(--shadow)}h2{font:500 clamp(1.5rem,3vw,2.05rem)/1.2 Georgia,serif;letter-spacing:-.02em;margin:0 0 14px}h3{font-size:1.02rem;margin:0 0 8px}p{margin:.5em 0 1em}.lead{font-size:1.05rem;color:#4f5049;max-width:800px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:17px;padding:18px;background:#fff}.card.soft{background:var(--accent-light);border-color:#dfe6d9}.card.peach{background:#fbf5f0}.small{font-size:.9rem;color:var(--muted)}.flow{margin:24px 0 4px;border:1px solid var(--line);border-radius:18px;padding:16px;background:#fcfbf8}.flow svg{display:block;width:100%;height:auto;min-height:120px}.flow-mobile{display:none}.step-list{padding-left:1.25rem}.step-list li{padding:5px 0 5px 5px}.step-list li::marker{color:var(--accent);font-weight:700}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{text-align:left;vertical-align:top;padding:12px 10px;border-bottom:1px solid var(--line)}th{font-size:.77rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f3f2ed;border-radius:5px;padding:2px 5px;font-size:.9em}.pill{display:inline-block;border-radius:999px;background:var(--accent-light);padding:3px 9px;font-size:.79rem;margin:2px}.callout{border-left:3px solid var(--gold);padding:10px 16px;background:#fbf7ee;border-radius:0 12px 12px 0}.tree{white-space:pre-wrap;overflow:auto;background:#292b27;color:#efeee8;border-radius:16px;padding:20px;font-size:.86rem;line-height:1.7}.details{border-top:1px solid var(--line);padding:14px 0}.details summary{cursor:pointer;font-weight:650}.details p{color:var(--muted);margin-bottom:0}.links li{margin:.35em 0}.footer{text-align:center;color:var(--muted);font-size:.85rem;padding:20px}.muted{color:var(--muted)}
+    @media(max-width:700px){.wrap{padding:12px 12px 46px}.hero,section{border-radius:20px}.grid{grid-template-columns:1fr}.desktop-flow{display:none}.flow-mobile{display:block}.flow svg{min-height:0}table{display:block;overflow-x:auto;white-space:normal}th,td{min-width:130px}.hero:after{width:170px;height:170px;right:-88px;top:-65px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero" id="top">
+      <div class="eyebrow">Build With AI · Technical blueprint</div>
+      <h1>Skincare Routine Personaliser</h1>
+      <p>A small, SQL-backed app that turns a person's own product shelf and preferences into clear, saved routine suggestions.</p>
+      <span class="status"><i></i> Approved</span>
+    </header>
+    <nav aria-label="Page sections">
+      <a href="#plain">How it works</a><a href="#journey">Journey</a><a href="#stack">Stack</a><a href="#components">Components</a><a href="#data">Data</a><a href="#files">Files</a><a href="#decisions">Decisions</a>
+    </nav>
+
+    <section id="plain">
+      <div class="tag">01 · In plain language</div><h2>How this works</h2>
+      <p class="lead">The app runs on this computer. React displays the pages, an Express server handles requests, and SQLite saves the products, questionnaire answers, and routines in one local file. The server uses SQL to find the products and JavaScript rules to build explainable suggestions.</p>
+      <div class="grid">
+        <article class="card soft"><h3>Why use a database?</h3><p class="small">You wanted SQL to be part of the learning. The app's rows and joins are real, but SQLite stays small and local—no account or hosted service needed.</p></article>
+        <article class="card peach"><h3>Why rules instead of live AI?</h3><p class="small">A transparent match score can show which concern tags matched. Product claims come from curated product information; the app does not invent benefits.</p></article>
+      </div>
+      <div class="flow" role="img" aria-label="Data flow from phone-sized browser to React screens, local Express API, matching rules and SQL, and SQLite file">
+        <svg class="desktop-flow" viewBox="0 0 900 150" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 9 4.5 0 9z" fill="#90958a"/></marker></defs>
+          <g fill="#fff" stroke="#dddcd4"><rect x="12" y="38" width="170" height="72" rx="16"/><rect x="252" y="38" width="170" height="72" rx="16"/><rect x="492" y="38" width="170" height="72" rx="16"/><rect x="732" y="38" width="154" height="72" rx="16"/></g>
+          <g fill="#252522" font-family="system-ui" text-anchor="middle"><text x="97" y="68" font-size="15" font-weight="700">Browser</text><text x="97" y="89" font-size="12" fill="#696963">phone-width UI</text><text x="337" y="68" font-size="15" font-weight="700">React + Vite</text><text x="337" y="89" font-size="12" fill="#696963">screens + API client</text><text x="577" y="68" font-size="15" font-weight="700">Express + rules</text><text x="577" y="89" font-size="12" fill="#696963">JSON routes + SQL</text><text x="809" y="68" font-size="15" font-weight="700">SQLite</text><text x="809" y="89" font-size="12" fill="#696963">local data file</text></g>
+          <g stroke="#90958a" stroke-width="2" marker-end="url(#arrow)"><path d="M185 74h59"/><path d="M425 74h59"/><path d="M665 74h59"/></g><text x="450" y="137" text-anchor="middle" fill="#696963" font-family="system-ui" font-size="12">Requests go right; saved results return to the screen.</text>
+        </svg>
+        <svg class="flow-mobile" viewBox="0 0 350 340" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arrowm" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 9 4.5 0 9z" fill="#90958a"/></marker></defs>
+          <g fill="#fff" stroke="#dddcd4"><rect x="52" y="8" width="246" height="58" rx="15"/><rect x="52" y="94" width="246" height="58" rx="15"/><rect x="52" y="180" width="246" height="58" rx="15"/><rect x="52" y="266" width="246" height="58" rx="15"/></g>
+          <g fill="#252522" font-family="system-ui" text-anchor="middle"><text x="175" y="33" font-size="14" font-weight="700">Browser · phone-width UI</text><text x="175" y="52" font-size="11" fill="#696963">React screens</text><text x="175" y="119" font-size="14" font-weight="700">React + Vite</text><text x="175" y="138" font-size="11" fill="#696963">screen + API client</text><text x="175" y="205" font-size="14" font-weight="700">Express + rules</text><text x="175" y="224" font-size="11" fill="#696963">JSON routes + SQL</text><text x="175" y="291" font-size="14" font-weight="700">SQLite</text><text x="175" y="310" font-size="11" fill="#696963">local data file</text></g>
+          <g stroke="#90958a" stroke-width="2" marker-end="url(#arrowm)"><path d="M175 68v19"/><path d="M175 154v19"/><path d="M175 240v19"/></g>
+        </svg>
+      </div>
+    </section>
+
+    <section id="journey">
+      <div class="tag">02 · From PRD to system</div><h2>The core journey</h2>
+      <ol class="step-list">
+        <li><b>Open the app.</b> React asks the API for saved routines and owned products.</li>
+        <li><b>Choose products.</b> The catalog is searched in SQLite; the person's expiry date is saved on a separate owned-item row.</li>
+        <li><b>Answer the questionnaire.</b> Concerns, day/night, clock time, and weekly frequency are saved locally.</li>
+        <li><b>See suggestions.</b> Express excludes expired items, compares concern tags, orders product categories, and returns the matched reasons and authored notes.</li>
+        <li><b>Save one.</b> The API writes a routine and its ordered product steps to SQLite.</li>
+        <li><b>Return later.</b> The same browser loads that saved routine from the local database.</li>
+      </ol>
+      <p class="callout"><b>Fit score:</b> matching selected concerns ÷ selected concerns. It measures catalog-tag overlap only, not how well a product treats a condition. Combination details are shown only when a source-backed note was authored; otherwise the app says “Not assessed.”</p>
+    </section>
+
+    <section id="stack">
+      <div class="tag">03 · Tools and runtime</div><h2>Stack</h2>
+      <div class="grid">
+        <article class="card"><h3>React 19.3 + Vite 8.1</h3><p class="small">You approved React and Vite. They create a responsive browser app and fast local build workflow.</p></article>
+        <article class="card"><h3>Node.js 22.12+ + Express 5</h3><p class="small">A small local API separates screen code from SQL and recommendation logic. Node 22.12+ satisfies Vite's current minimum.</p></article>
+        <article class="card"><h3>SQLite + better-sqlite3 13.x</h3><p class="small">A single local database file; plain SQL queries make database learning visible. Check the Windows binary during setup.</p></article>
+        <article class="card"><h3>Start the demo</h3><p class="small">Terminal 1: <code>npm run server</code><br>Terminal 2: <code>npm run dev</code><br>Open <code>http://localhost:5173</code> at phone width.</p></article>
+      </div>
+      <p class="small">No API keys, live AI calls, logins, hosted database, or deployment. The build still needs a short demo video and a public GitHub repository.</p>
+      <ul class="links small"><li><a href="https://react.dev/">React docs</a> · <a href="https://vite.dev/guide/">Vite guide</a></li><li><a href="https://expressjs.com/en/guide/migrating-5/">Express 5 guide</a> · <a href="https://www.sqlite.org/about.html">SQLite overview</a> · <a href="https://github.com/WiseLibs/better-sqlite3">better-sqlite3</a></li></ul>
+    </section>
+
+    <section id="components">
+      <div class="tag">04 · App parts</div><h2>Components and API</h2>
+      <div class="grid">
+        <article class="card"><h3>React screens</h3><p class="small">Home/saved routines, questionnaire, product list/details, suggestion results, and routine detail. The API is the source of saved data.</p></article>
+        <article class="card"><h3>Express API</h3><p class="small"><code>/api/products</code>, <code>/api/owned-products</code>, <code>/api/profile</code>, <code>/api/suggestions</code>, and <code>/api/routines</code> return JSON and validate submitted fields.</p></article>
+        <article class="card"><h3>Matching rules</h3><p class="small">Use owned, unexpired products; prioritize catalog timing guidance; use preferences when guidance is absent; keep sunscreen last in daytime order.</p></article>
+        <article class="card"><h3>SQL data access</h3><p class="small">Parameterized SQL lives in one module. First-run seed inserts curated catalog entries and never replaces user data on restart.</p></article>
+      </div>
+      <details class="details"><summary>How recommendations stay understandable</summary><p>Each returned routine explains which concern tags matched. Product benefits are copied from curated records, not composed by a model. Unverified ingredient combinations remain unknown; there is no promise that the rules catch every possible reaction.</p></details>
+    </section>
+
+    <section id="data">
+      <div class="tag">05 · SQL model</div><h2>Data and persistence</h2>
+      <p class="lead">Five SQLite tables keep the reference catalog separate from a person's own items and saved routines. JSON text is used for small tag lists; routine steps and product ownership use relationships the learner can query with joins.</p>
+      <table><thead><tr><th>Table</th><th>What it stores</th><th>Link</th></tr></thead><tbody>
+        <tr><td><code>catalog_products</code></td><td>Name, brand, category, ingredients, price/currency, benefits, concern tags, usage notes, source URL</td><td>One catalog product can have multiple owned items.</td></tr>
+        <tr><td><code>owned_products</code></td><td>Catalog product ID, expiry date (nullable), date added</td><td>References one catalog entry; expiry belongs to the individual item.</td></tr>
+        <tr><td><code>profile_preferences</code></td><td>One profile row: skin type, concerns, period, clock time, uses per week</td><td>Fixed ID 1 keeps this a one-person local demo.</td></tr>
+        <tr><td><code>routines</code></td><td>Schedule, concern tags, fit score, created date</td><td>One chosen suggestion becomes a saved routine.</td></tr>
+        <tr><td><code>routine_steps</code></td><td>Routine ID, owned product ID, order, purpose text</td><td>Foreign keys connect the saved ordered steps.</td></tr>
+      </tbody></table>
+      <p class="small">The database is <code>data/skincare.sqlite</code> and is gitignored. It stays on this computer; there is no sync or backup in this proof of concept.</p>
+    </section>
+
+    <section id="files">
+      <div class="tag">06 · Planned code map</div><h2>File structure</h2>
+      <pre class="tree">project/
+├── devpost/       scope.md · prd.md · spec.md · spec.html
+├── src/
+│   ├── main.jsx · App.jsx
+│   ├── api/client.js
+│   ├── components/ · pages/ · styles/
+├── server/
+│   ├── index.js
+│   ├── db.js
+│   ├── catalog-seed.js
+│   ├── matching.js
+│   └── data-access.js
+├── data/           local SQLite file (gitignored)
+├── package.json · package-lock.json · .gitignore</pre>
+    </section>
+
+    <section id="decisions">
+      <div class="tag">07 · Decisions and open points</div><h2>What we have decided</h2>
+      <div class="grid">
+        <article class="card soft"><h3>Learner choices</h3><p class="small">React/Vite; phone-sized browser demo; SQLite and SQL as part of learning; starter catalog based on owned products; local persistence; product guidance before preference.</p></article>
+        <article class="card peach"><h3>Kept small on purpose</h3><p class="small">One local profile, curated seed data, deterministic match rules, and no accounts or hosted services. This makes the full request-to-SQL-to-screen path visible.</p></article>
+      </div>
+      <h3 style="margin-top:24px">Starter products to verify</h3>
+      <p><span class="pill">SKIN1004 Centella eye cream</span><span class="pill">numbuzin No.5 toner</span><span class="pill">Centellian24 oil cleanser</span><span class="pill">haruharu wonder sunscreen</span></p>
+      <p class="callout"><b>Package confirmed:</b> haruharu wonder Black Bamboo Top-to-Toe SPF Veil SPF 50+/PA++++. Its official <a href="https://haruharuwonder.com/products/haruharuwonder-black-bamboo-top-to-toe-spf-veil-100ml">brand listing</a> supplies the ingredients, daily face/body use directions, reapplication guidance, and current USD estimate. The exact SKIN1004 eye cream and Centellian24 cleansing oil variants still need package confirmation.</p>
+      <p class="small">Price estimates found on official product listings are in USD; choose the display currency during build. Prices do not affect suggestions. Product-specific skin guidance is informational, not diagnosis or treatment advice.</p>
+      <details class="details"><summary>Other realistic failure points</summary><p>If the database cannot be opened, initialize its schema and seed data and show a readable error. If there is no eligible product match, explain that and let the person adjust selections. Do not guess missing product information.</p></details>
+      <p class="small">Open: confirm exact product variants, choose a price display currency, and settle the working app name later. All other behavior follows the approved PRD.</p>
+    </section>
+    <footer class="footer">Approved technical plan · exact product variants are checked before product seed data is added</footer>
+  </main>
+</body>
+</html>
