@@ -1,4 +1,4 @@
-# Skincare Routine Personaliser
+# Skincare Routine Personaliser (Skin Notes)
 
 ## Run locally
 
