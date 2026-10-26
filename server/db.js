@@ -65,6 +65,12 @@ db.exec(`
     product_snapshot_json TEXT NOT NULL,
     UNIQUE (routine_id, step_order)
   );
+  CREATE TABLE IF NOT EXISTS routine_step_completions (
+    step_id INTEGER NOT NULL REFERENCES routine_steps(id) ON DELETE CASCADE,
+    completed_on TEXT NOT NULL,
+    completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (step_id, completed_on)
+  );
 `);
 
 // Keep the catalog row's ID stable while replacing its earlier, unconfirmed label.

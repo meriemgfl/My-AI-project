@@ -1,7 +1,11 @@
 import express from 'express';
-import { addInventoryProduct, findProducts, getExpiredProductIds, getInventory, getOwnedProductIds, getProfile, getSavedRoutine, listSavedRoutines, removeInventoryProduct, saveProfile, saveSuggestedRoutine } from './data-access.js';
+import { addInventoryProduct, findProducts, getExpiredProductIds, getInventory, getOwnedProductIds, getProfile, getSavedRoutine, listSavedRoutines, removeInventoryProduct, saveProfile, saveSuggestedRoutine, setRoutineStepCompletion, updateSavedRoutine, deleteSavedRoutine } from './data-access.js';
 import { isDemoMode } from './db.js';
 import { buildSuggestions } from './matching.js';
+
+function isValidDate(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
+}
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -42,9 +46,49 @@ app.get('/api/routines', (_request, response) => response.json({ routines: listS
 app.get('/api/routines/:routineId', (request, response) => {
   const id = Number(request.params.routineId);
   if (!Number.isInteger(id) || id < 1) return response.status(400).json({ error: 'Choose a valid routine.' });
-  const routine = getSavedRoutine(id);
+  const completedOn = request.query.date === undefined ? null : String(request.query.date);
+  const weekStart = request.query.weekStart === undefined ? null : String(request.query.weekStart);
+  if (completedOn !== null && !isValidDate(completedOn) || weekStart !== null && !isValidDate(weekStart)) return response.status(400).json({ error: 'Choose a valid checklist date.' });
+  const routine = getSavedRoutine(id, completedOn, weekStart);
   if (!routine) return response.status(404).json({ error: 'That saved routine could not be found.' });
   return response.json({ routine });
+});
+app.put('/api/routines/:routineId', (request, response) => {
+  const id = Number(request.params.routineId);
+  const { selectedConcernIds, selectedProductIds, period, preferredTime, usesPerWeek } = request.body ?? {};
+  const validTime = typeof preferredTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(preferredTime);
+  if (!Number.isInteger(id) || id < 1 || !Array.isArray(selectedConcernIds) || selectedConcernIds.some((item) => typeof item !== 'string') || !Array.isArray(selectedProductIds) || selectedProductIds.some((item) => !Number.isInteger(item)) || !(period === 'day' || period === 'night') || !validTime || !Number.isInteger(usesPerWeek) || usesPerWeek < 1 || usesPerWeek > 7) {
+    return response.status(400).json({ error: 'Review your routine choices and try again.' });
+  }
+  if (!getSavedRoutine(id)) return response.status(404).json({ error: 'That saved routine could not be found.' });
+  const owned = new Set(getOwnedProductIds());
+  const expired = new Set(getExpiredProductIds());
+  const productIds = selectedProductIds.filter((productId) => owned.has(productId) && !expired.has(productId));
+  const suggestion = buildSuggestions({ selectedConcernIds, selectedProductIds: productIds, period, preferredTime, usesPerWeek });
+  if (!suggestion.options.length) return response.status(422).json({ error: suggestion.message || 'There is no routine to save yet.' });
+  const result = updateSavedRoutine(id, suggestion.options[0]);
+  if (result.notFound) return response.status(404).json({ error: 'That saved routine could not be found.' });
+  if (result.duplicate) return response.status(409).json({ error: 'Another saved routine already has these exact choices.' });
+  saveProfile({ selectedConcernIds, period, preferredTime, usesPerWeek });
+  return response.json({ routine: result.routine });
+});
+app.delete('/api/routines/:routineId', (request, response) => {
+  const id = Number(request.params.routineId);
+  if (!Number.isInteger(id) || id < 1) return response.status(400).json({ error: 'Choose a valid routine.' });
+  if (!deleteSavedRoutine(id)) return response.status(404).json({ error: 'That saved routine could not be found.' });
+  return response.status(204).end();
+});
+app.put('/api/routines/:routineId/checklist', (request, response) => {
+  const routineId = Number(request.params.routineId);
+  const { stepId, date, weekStart, completed } = request.body ?? {};
+  if (!Number.isInteger(routineId) || routineId < 1 || !Number.isInteger(stepId) || !isValidDate(date) || !isValidDate(weekStart) || typeof completed !== 'boolean') {
+    return response.status(400).json({ error: 'Check the routine step and try again.' });
+  }
+  if (!setRoutineStepCompletion(routineId, stepId, date, completed)) {
+    return response.status(404).json({ error: 'That step does not belong to this routine.' });
+  }
+  const updated = getSavedRoutine(routineId, date, weekStart);
+  return response.json({ completedStepIds: updated.completedStepIds, completedDays: updated.completedDays });
 });
 app.post('/api/routines', (request, response) => {
   const { selectedConcernIds, selectedProductIds, period, preferredTime, usesPerWeek } = request.body ?? {};

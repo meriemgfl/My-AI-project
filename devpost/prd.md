@@ -18,7 +18,7 @@ Source: `scope.md > Who It's For`, `The Unique Kernel`, and `The Core Loop`.
 4. The app presents potential routines based on the selected concerns and product information. Product usage guidance determines timing and frequency when available; otherwise the app uses the person's preferences. Possible results come from product information.
 5. Each suggestion shows the concern(s) it targets, its timing and frequency, possible results, and ordered product steps. Steps follow the learner's stated general order: serums, moisturiser, then sunscreen. Expired products are excluded.
 6. The person chooses a suggestion. It is saved in their profile on the current device.
-7. On a later visit, they see saved routines and can open one to view its ordered product steps and guidance.
+7. On a later visit, they can browse saved routines, open one, edit its inputs to regenerate the steps, or delete it.
 
 Source: `scope.md > The Core Loop`, `What "Working" Looks Like`, and `The POC Boundary`.
 
@@ -28,7 +28,8 @@ A phone-first, minimal interface with generous white space, guided by the learne
 
 ### Home and Saved Routines
 
-- Show saved routine cards. Each card identifies the routine's day/night timing, preferred clock time, weekly frequency, and target skin concern(s).
+- Show saved routine cards in a dedicated routine library. Each card identifies the routine's day/night timing, preferred clock time, weekly frequency, and target skin concern(s).
+- Let the person open, edit, or delete a saved routine. Editing reopens the questionnaire prefilled with that routine's concerns, schedule, and active owned products, then regenerates its ordered steps. Deleting asks for confirmation and removes its checklist history.
 - Provide one **Create a routine** action. It opens the questionnaire and collects the profile information used for suggestions; there is no separate **Finish profile** action because it would open the same questionnaire.
 - Provide **View/create product list** as a separate action.
 - With no saved routines, keep the same two actions and make **Create a routine** the clear starting point.
@@ -110,11 +111,15 @@ Source: `scope.md > The Core Loop`, `What "Working" Looks Like`, and `The POC Bo
 
 - Each saved routine identifies the day/night period, clock time, weekly frequency, and concern(s) it targets.
 - Opening a routine shows numbered product steps with short purpose/use guidance.
+- In routine details, the person can check off each step as they complete it. The app shows today’s completed count and the number of fully completed routine days this week against the routine’s weekly target. Progress is saved for that routine and local calendar date. A new day starts with a fresh checklist; the saved routine steps do not change.
 
 **Acceptance criteria**
 
 - After choosing a suggestion, the routine appears in the saved-routines view.
 - A saved routine can be reopened and shows its schedule, target concern(s), products, and step order.
+- A saved routine can be edited through its prefilled questionnaire and updated from the resulting suggestion. Editing replaces its steps and clears its checklist history.
+- A saved routine can be deleted only after confirmation; it disappears from the routine library and its checklist history is removed.
+- Checking or unchecking a step updates today’s progress, which remains after reopening the routine on the same day. Completing every step counts that date as one routine day toward the weekly target. The checklist is fresh on the next local calendar day, and the weekly count begins again on Monday.
 
 Source: `scope.md > The Core Loop` and `What "Working" Looks Like`.
 
@@ -156,13 +161,13 @@ Source: `scope.md > Later`.
 
 ## Possible Later Enhancements
 
-Broader product analysis, richer routine management, barcode-based product lookup, and accounts/synchronization can be explored after the proof of concept demonstrates the questionnaire-to-routine journey.
+Broader product analysis, product swaps, barcode-based product lookup, and accounts/synchronization can be explored after the proof of concept demonstrates the questionnaire-to-routine journey. Routine editing, deletion, and daily step completion are included as consistency and organization features.
 
 ## Non-Goals
 
 - Building a full skincare marketplace; the prototype uses a small preloaded product set. (Source: `scope.md > The POC Boundary` and `Later`.)
 - Cross-device accounts or synchronization. (Source: `scope.md > Later`.)
-- Manual routine editing or product swapping in the first demo. (Source: `scope.md > Later`.)
+- Product swapping within an existing routine. (Source: `scope.md > Later`.)
 
 ## Open Questions
 

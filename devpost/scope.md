@@ -13,7 +13,7 @@ Turn someone's existing skincare products into a routine that fits their selecte
 Initially, someone like the learner who owns a number of skincare products, wants to make informed choices, and can feel overwhelmed deciding what to use. They want more consistency and currently search online when uncertain.
 
 ## The Core Loop
-The user fills out a questionnaire with their skin concerns, products they own, and schedule preferences. The app shows potential routines and possible cosmetic results. The user chooses one, and it is saved to their profile on that device so they can return to it.
+The user fills out a questionnaire with their skin concerns, products they own, and schedule preferences. The app shows potential routines and possible cosmetic results. The user chooses one, and it is saved to their profile on that device so they can return to it, edit or delete it, and check off its steps on routine days.
 
 ## Inspiration & Identity
 A phone-first, minimal interface with generous white space, guided by the reference image the learner shared.
@@ -25,7 +25,7 @@ The learner wants to make better use of skincare they already own, feel less ove
 In a short demo, someone selects their skin concerns and products from a small preloaded set, provides schedule preferences, sees routine suggestions with their target concerns and possible results, chooses one, and sees the saved routine in their profile with products organized into steps.
 
 ## The POC Boundary
-Build one questionnaire-to-routine-suggestion flow around a small preloaded product set. Suggest routines using the selected concerns and owned products. Product usage information takes priority for routine timing and frequency when available; otherwise use the person's preferences. Show suggested products in steps using the learner's stated general order (serums, moisturiser, then sunscreen). Let the person select a suggestion and save it on the current device. If no suggestion fits, let them adjust or reduce their selected skin concerns.
+Build one questionnaire-to-routine-suggestion flow around a small preloaded product set. Suggest routines using the selected concerns and owned products. Product usage information takes priority for routine timing and frequency when available; otherwise use the person's preferences. Show suggested products in steps using the learner's stated general order (serums, moisturiser, then sunscreen). Let the person select a suggestion and save it on the current device. On the saved routine, let them check off steps, keep that day’s progress on the device, and count fully completed days toward the routine’s weekly target. Give the person a saved-routine library with edit and confirmed delete actions. If no suggestion fits, let them adjust or reduce their selected skin concerns.
 
 ## Later
 - Manually creating routines or adding products to an existing routine.

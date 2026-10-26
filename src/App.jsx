@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { addInventoryProduct, getHealth, getInventory, getProducts, getProfile, getRoutine, getRoutines, getSuggestion, removeInventoryProduct, saveProfile, saveRoutine } from './api/client.js';
+import { addInventoryProduct, getHealth, getInventory, getProducts, getProfile, getRoutine, getRoutines, getSuggestion, removeInventoryProduct, saveProfile, saveRoutine, setRoutineStepCompletion, updateRoutine, removeSavedRoutine } from './api/client.js';
 
 const concerns = [
   { id: 'dry-skin', label: 'Dry skin' },
@@ -19,6 +19,28 @@ const initialAnswers = {
   preferredTime: '08:00',
   usesPerWeek: 7,
 };
+
+// The selected period drives product suggestions; infer it from the chosen time.
+function periodForTime(value) {
+  if (!value) return 'day';
+  const hour = Number(value.slice(0, 2));
+  return hour >= 18 || hour < 6 ? 'night' : 'day';
+}
+
+function formatLocalDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function localDate() {
+  return formatLocalDate(new Date());
+}
+
+function localWeekStart() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return formatLocalDate(date);
+}
 
 function formatTime(value) {
   const [rawHour, rawMinute] = value.split(':').map(Number);
@@ -62,6 +84,9 @@ function App() {
   const [inventory, setInventory] = useState([]);
   const [routines, setRoutines] = useState([]);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
+  const [editingRoutineId, setEditingRoutineId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [updatingStepIds, setUpdatingStepIds] = useState([]);
   const [savedRoutineId, setSavedRoutineId] = useState(null);
   const [savingRoutine, setSavingRoutine] = useState(false);
   const [search, setSearch] = useState('');
@@ -72,6 +97,11 @@ function App() {
   const [demoMode, setDemoMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const activeTheme = screen === 'routine-detail' && selectedRoutine
+    ? selectedRoutine.period
+    : screen === 'questionnaire' || screen === 'results'
+      ? answers.period
+      : 'general';
 
   useEffect(() => {
     Promise.all([getProducts(), getInventory(), getProfile(), getRoutines(), getHealth()])
@@ -85,6 +115,11 @@ function App() {
       .catch((problem) => setError(problem.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = activeTheme;
+    return () => delete document.documentElement.dataset.theme;
+  }, [activeTheme]);
 
   function toggleConcern(id) {
     setAnswers((current) => ({
@@ -124,22 +159,70 @@ function App() {
     setError('');
     setSavingRoutine(true);
     try {
-      const result = await saveRoutine(answers);
-      setRoutines((current) => current.some((routine) => routine.id === result.routine.id) ? current : [result.routine, ...current]);
-      setSavedRoutineId(result.routine.id);
+      if (editingRoutineId !== null) {
+        const result = await updateRoutine(editingRoutineId, answers);
+        setRoutines((current) => current.map((routine) => routine.id === editingRoutineId ? { ...routine, ...result.routine } : routine));
+        setEditingRoutineId(null);
+        await openRoutine(result.routine.id);
+      } else {
+        const result = await saveRoutine(answers);
+        setRoutines((current) => current.some((routine) => routine.id === result.routine.id) ? current : [result.routine, ...current]);
+        setSavedRoutineId(result.routine.id);
+      }
     } catch (problem) { setError(problem.message); }
     finally { setSavingRoutine(false); }
   }
-
   async function openRoutine(id) {
     setError('');
     try {
-      const result = await getRoutine(id);
+      const result = await getRoutine(id, localDate(), localWeekStart());
       setSelectedRoutine(result.routine);
       setScreen('routine-detail');
     } catch (problem) { setError(problem.message); }
   }
 
+  async function toggleRoutineStep(stepId, completed) {
+    if (!selectedRoutine) return;
+    setUpdatingStepIds((current) => [...current, stepId]);
+    setError('');
+    try {
+      const result = await setRoutineStepCompletion(selectedRoutine.id, stepId, selectedRoutine.checklistDate, selectedRoutine.weekStart, completed);
+      setSelectedRoutine((current) => ({ ...current, completedStepIds: result.completedStepIds, completedDays: result.completedDays }));
+    } catch (problem) { setError(problem.message); }
+    finally { setUpdatingStepIds((current) => current.filter((id) => id !== stepId)); }
+  }
+
+  async function editRoutine(id) {
+    setError('');
+    try {
+      const { routine } = await getRoutine(id, localDate(), localWeekStart());
+      const idsByLabel = new Map(concerns.map((concern) => [concern.label.toLowerCase(), concern.id]));
+      idsByLabel.set('sun damage prevention', 'sun-damage');
+      const availableIds = new Set(inventory.filter((product) => !product.expiryDate || product.expiryDate >= localDate()).map((product) => product.id));
+      setAnswers({
+        selectedConcernIds: routine.matchedConcerns.map((label) => idsByLabel.get(label.toLowerCase())).filter(Boolean),
+        selectedProductIds: routine.steps.map((step) => step.id).filter((productId) => availableIds.has(productId)),
+        period: routine.period,
+        preferredTime: routine.preferredTime,
+        usesPerWeek: routine.usesPerWeek,
+      });
+      setEditingRoutineId(id);
+      setSavedRoutineId(null);
+      setSuggestion(null);
+      setScreen('questionnaire');
+    } catch (problem) { setError(problem.message); }
+  }
+
+  async function confirmDeleteRoutine(id) {
+    setError('');
+    try {
+      await removeSavedRoutine(id);
+      setRoutines((current) => current.filter((routine) => routine.id !== id));
+      setDeleteConfirmId(null);
+      if (selectedRoutine?.id === id) setSelectedRoutine(null);
+      setScreen('saved-routines');
+    } catch (problem) { setError(problem.message); }
+  }
   async function addProduct(productId) {
     try {
       await addInventoryProduct(productId, expiryDates[productId] || null);
@@ -164,7 +247,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={activeTheme}>
       <Header onHome={goHome} demoMode={demoMode} />
       <main className="phone-frame">
         {screen === 'home' && (
@@ -179,7 +262,7 @@ function App() {
               <button className="hero-cta" onClick={() => setScreen('questionnaire')} aria-label="Create your routine">Start my routine <span>↗</span></button>
             </article>
             {routines.length > 0 && <section className="saved-routines-section">
-              <div className="dashboard-section-heading"><h2>Your routines</h2><span>{routines.length} SAVED</span></div>
+              <div className="dashboard-section-heading"><h2>Your routines</h2><button type="button" className="text-button" onClick={() => setScreen('saved-routines')}>Manage · {routines.length}</button></div>
               <div className="saved-routines-list">
                 {routines.map((routine) => <button className="saved-routine-card" key={routine.id} onClick={() => openRoutine(routine.id)}>
                   <span className="routine-card-icon">{routine.period === 'day' ? '☼' : '☾'}</span>
@@ -198,13 +281,32 @@ function App() {
           </section>
         )}
 
+        {screen === 'saved-routines' && (
+          <section className="flow-screen saved-routines-screen">
+            <button type="button" className="back-link" onClick={goHome}>← <span>Home</span></button>
+            <p className="eyebrow">YOUR PERSONAL ROUTINE LIBRARY</p>
+            <h1>Your saved<br /><em>routines.</em></h1>
+            <p className="intro">Keep the routines that fit your rhythm. Open one to follow it, or edit its products and schedule.</p>
+            <button type="button" className="button button-dark full-width" onClick={() => { setEditingRoutineId(null); setScreen('questionnaire'); }}>Create a routine <span>＋</span></button>
+            {routines.length === 0 && <div className="empty-match"><div className="empty-symbol">✳</div><h2>No saved routines yet</h2><p>Your new routine will appear here when you save a suggestion.</p></div>}
+            <div className="routine-library-list">
+              {routines.map((routine) => <article className="routine-manage-card" key={routine.id}>
+                <div className="routine-manage-top"><span className="routine-card-icon">{routine.period === 'day' ? '☼' : '☾'}</span><div className="saved-routine-copy"><strong>{routine.title}</strong><small>{routine.matchedConcerns.join(' · ') || 'Personal routine'}</small><small>{formatTime(routine.preferredTime)} · {routine.usesPerWeek} days / week</small></div></div>
+                <div className="routine-manage-actions"><button type="button" className="button button-light" onClick={() => openRoutine(routine.id)}>View</button><button type="button" className="button button-light" onClick={() => editRoutine(routine.id)}>Edit</button><button type="button" className="text-button delete-link" onClick={() => setDeleteConfirmId(routine.id)}>Delete</button></div>
+                {deleteConfirmId === routine.id && <div className="delete-confirmation" role="alertdialog" aria-label="Delete saved routine"><strong>Delete this routine?</strong><p>This will also remove its saved checklist history.</p><div><button type="button" className="text-button" onClick={() => setDeleteConfirmId(null)}>Keep routine</button><button type="button" className="text-button delete-link" onClick={() => confirmDeleteRoutine(routine.id)}>Delete routine</button></div></div>}
+              </article>)}
+            </div>
+            {error && <p className="error-message" role="alert">{error}</p>}
+          </section>
+        )}
         {screen === 'questionnaire' && (
           <form className="flow-screen" onSubmit={createSuggestion}>
-            <button type="button" className="back-link" onClick={goHome}>← <span>Home</span></button>
+            <button type="button" className="back-link" onClick={() => { if (editingRoutineId !== null) { setEditingRoutineId(null); setScreen('saved-routines'); } else goHome(); }}>← <span>{editingRoutineId !== null ? 'Cancel edit' : 'Home'}</span></button>
             <div className="progress"><span style={{ width: '100%' }} /></div>
-            <p className="eyebrow">YOUR ROUTINE · 1 OF 1</p>
+            <p className="eyebrow">{editingRoutineId !== null ? 'EDIT YOUR ROUTINE' : 'YOUR ROUTINE · 1 OF 1'}</p>
             <h1>What would you<br /><em>like to focus on?</em></h1>
             <p className="intro">Choose all that feel relevant. We’ll use your products and preferences to shape a routine.</p>
+            {editingRoutineId !== null && <p className="caution-note">Updating replaces this routine’s steps and clears its previous checklist history.</p>}
 
             <fieldset>
               <legend>Skin concerns <span>Select any</span></legend>
@@ -234,15 +336,24 @@ function App() {
             <fieldset>
               <legend>When works for you?</legend>
               <div className="schedule-row">
-                <label className="field-label">Routine time
-                  <select value={answers.period} onChange={(event) => setAnswers({ ...answers, period: event.target.value })}>
-                    <option value="day">Daytime</option><option value="night">Nighttime</option>
-                  </select>
-                </label>
+                <div className="field-label period-field-label"><span>Routine type</span>
+                  <span className="period-toggle" role="group" aria-label="Choose day or night routine">
+                    <button type="button" className={`period-option day-option ${answers.period === 'day' ? 'active' : ''}`} aria-pressed={answers.period === 'day'} onClick={() => setAnswers((current) => ({ ...current, period: 'day' }))}>
+                      <span aria-hidden="true">☼</span> Day
+                    </button>
+                    <button type="button" className={`period-option night-option ${answers.period === 'night' ? 'active' : ''}`} aria-pressed={answers.period === 'night'} onClick={() => setAnswers((current) => ({ ...current, period: 'night' }))}>
+                      <span aria-hidden="true">☾</span> Night
+                    </button>
+                  </span>
+                </div>
                 <label className="field-label">Start around
-                  <input type="time" value={answers.preferredTime} onChange={(event) => setAnswers({ ...answers, preferredTime: event.target.value })} />
+                  <input type="time" value={answers.preferredTime} onChange={(event) => {
+                    const preferredTime = event.target.value;
+                    setAnswers((current) => ({ ...current, preferredTime, period: periodForTime(preferredTime) }));
+                  }} />
                 </label>
               </div>
+              <p className="time-hint">6:00 PM–5:59 AM is treated as night.</p>
               <label className="field-label frequency-label">How many days a week?
                 <select value={answers.usesPerWeek} onChange={(event) => setAnswers({ ...answers, usesPerWeek: Number(event.target.value) })}>
                   {[1, 2, 3, 4, 5, 6, 7].map((days) => <option key={days} value={days}>{days} {days === 1 ? 'day' : 'days'}</option>)}
@@ -252,7 +363,7 @@ function App() {
 
             {error && <p className="error-message" role="alert">{error}</p>}
             <button className="button button-dark full-width" type="submit" disabled={submitting || loading}>
-              {submitting ? 'Finding a fit…' : 'Show my suggestion'} <span>→</span>
+              {submitting ? 'Finding a fit…' : editingRoutineId !== null ? 'Preview routine changes' : 'Show my suggestion'} <span>→</span>
             </button>
           </form>
         )}
@@ -312,7 +423,7 @@ function App() {
                 {option.combinationStatus === 'not-assessed' && <p className="caution-note">Product combinations are not assessed yet. Check the product labels if you’re unsure.</p>}
                 <div className="score-explainer"><span>WHY THIS FITS</span><p>{option.matchedConcerns.join(' · ') || 'No selected concerns matched'} matched in the product information. This score is a catalog match, not a clinical result.</p></div>
                 {savedRoutineId === null
-                  ? <button className="button button-dark full-width save-routine-button" onClick={persistRoutine} disabled={savingRoutine}>{savingRoutine ? 'Saving your routine…' : 'Save this routine'} <span>♡</span></button>
+                  ? <button className="button button-dark full-width save-routine-button" onClick={persistRoutine} disabled={savingRoutine}>{savingRoutine ? 'Saving your routine…' : editingRoutineId !== null ? 'Update saved routine' : 'Save this routine'} <span>♡</span></button>
                   : <p className="saved-confirmation">✓ Saved to your routines on Home</p>}
               </article>
             ))}
@@ -327,12 +438,28 @@ function App() {
             <h1>{selectedRoutine.title}<br /><em>made for you.</em></h1>
             <p className="target-line">For {selectedRoutine.matchedConcerns.join(' and ') || 'your skincare goals'}</p>
             <div className="routine-meta"><span>◷ {formatTime(selectedRoutine.preferredTime)}</span><span>↻ {selectedRoutine.usesPerWeek}× / week</span></div>
+            <div className="routine-detail-actions">
+              <button type="button" className="button button-light" onClick={() => editRoutine(selectedRoutine.id)}>Edit routine</button>
+              <button type="button" className="text-button delete-link" onClick={() => setDeleteConfirmId(selectedRoutine.id)}>Delete</button>
+            </div>
+            {deleteConfirmId === selectedRoutine.id && <div className="delete-confirmation" role="alertdialog" aria-label="Delete saved routine">
+              <strong>Delete this routine?</strong><p>This will also remove its saved checklist history.</p>
+              <div><button type="button" className="text-button" onClick={() => setDeleteConfirmId(null)}>Keep routine</button><button type="button" className="text-button delete-link" onClick={() => confirmDeleteRoutine(selectedRoutine.id)}>Delete routine</button></div>
+            </div>
+            }
             <article className="routine-card saved-detail-card">
-              <div className="steps-heading">YOUR STEPS <span>{selectedRoutine.steps.length} products</span></div>
+              <div className="checklist-heading"><div><span className="steps-heading">TODAY’S CHECKLIST</span><p>On days you do this routine, check off each step. Progress resets each day.</p></div><strong>{selectedRoutine.completedStepIds.length} / {selectedRoutine.steps.length}</strong></div>
+              <div className="weekly-goal">
+                <div><span>THIS WEEK</span><strong>{selectedRoutine.completedDays.length} of {selectedRoutine.usesPerWeek} planned days</strong></div>
+                <div className="weekly-progress" role="progressbar" aria-label="Weekly routine progress" aria-valuemin={0} aria-valuemax={selectedRoutine.usesPerWeek} aria-valuenow={Math.min(selectedRoutine.completedDays.length, selectedRoutine.usesPerWeek)}><span style={{ width: (Math.min(100, selectedRoutine.completedDays.length / selectedRoutine.usesPerWeek * 100) + '%') }} /></div>
+              </div>
               <ol className="routine-steps">
-                {selectedRoutine.steps.map((step) => <li key={`${step.order}-${step.id}`}>
+                {selectedRoutine.steps.map((step) => <li className={selectedRoutine.completedStepIds.includes(step.stepId) ? 'step-complete' : ''} key={step.stepId}>
                   <span className="step-number">{step.order}</span>
-                  <div><span className="category">{step.categoryLabel}</span><strong>{step.name}</strong><p>{step.purpose}</p>{step.usageNote && <small>{step.usageNote}</small>}</div>
+                  <label className="checklist-step">
+                    <input type="checkbox" checked={selectedRoutine.completedStepIds.includes(step.stepId)} disabled={updatingStepIds.includes(step.stepId)} onChange={(event) => toggleRoutineStep(step.stepId, event.target.checked)} />
+                    <span className="checklist-copy"><span className="category">{step.categoryLabel}</span><strong>{step.name}</strong><span className="routine-purpose">{step.purpose}</span>{step.usageNote && <small>{step.usageNote}</small>}</span>
+                  </label>
                 </li>)}
               </ol>
             </article>
@@ -343,7 +470,7 @@ function App() {
       </main>
       <nav className="bottom-nav" aria-label="Main navigation">
         <button className={screen === 'home' ? 'nav-item active' : 'nav-item'} onClick={goHome}><span>⌂</span><small>Home</small></button>
-        <button className={screen === 'questionnaire' || screen === 'results' || screen === 'routine-detail' ? 'nav-item active' : 'nav-item'} onClick={() => setScreen(suggestion ? 'results' : 'questionnaire')}><span>✳</span><small>Routine</small></button>
+        <button className={screen === 'saved-routines' || screen === 'questionnaire' || screen === 'results' || screen === 'routine-detail' ? 'nav-item active' : 'nav-item'} onClick={() => setScreen('saved-routines')}><span>✳</span><small>Routines</small></button>
         <button className={screen === 'products' ? 'nav-item active' : 'nav-item'} onClick={() => setScreen('products')}><span>▧</span><small>Products</small></button>
         <button className="nav-item" onClick={() => setScreen('questionnaire')}><span>◉</span><small>Profile</small></button>
       </nav>

@@ -18,8 +18,11 @@ export const addInventoryProduct = (productId, expiryDate) => request('/api/inve
 });
 export const removeInventoryProduct = (productId) => request(`/api/inventory/${productId}`, { method: 'DELETE' });
 export const getRoutines = () => request('/api/routines');
-export const getRoutine = (routineId) => request(`/api/routines/${routineId}`);
+export const getRoutine = (routineId, date, weekStart) => request(`/api/routines/${routineId}?date=${date}&weekStart=${weekStart}`);
+export const setRoutineStepCompletion = (routineId, stepId, date, weekStart, completed) => request(`/api/routines/${routineId}/checklist`, { method: 'PUT', body: JSON.stringify({ stepId, date, weekStart, completed }) });
 export const saveRoutine = (answers) => request('/api/routines', { method: 'POST', body: JSON.stringify(answers) });
+export const updateRoutine = (routineId, answers) => request(`/api/routines/${routineId}`, { method: 'PUT', body: JSON.stringify(answers) });
+export const removeSavedRoutine = (routineId) => request(`/api/routines/${routineId}`, { method: 'DELETE' });
 export const getSuggestion = (answers) => request('/api/suggestions', {
   method: 'POST',
   body: JSON.stringify(answers),

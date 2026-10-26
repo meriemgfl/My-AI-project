@@ -24,6 +24,7 @@ PRD ref: `prd.md > The Core Journey`, `Questionnaire and Routine Suggestions`, `
 5. Express queries SQLite for the selected items, filters expired products, and runs deterministic matching and ordering rules. It returns routine options with the matching reasons and any authored product notes.
 6. The person chooses an option. Express saves its routine and ordered steps in SQLite.
 7. React reloads the saved routine from the API; closing and reopening the browser does not lose it.
+8. On a saved routine, React loads completion records for the device’s local date and Monday-to-Sunday week. Checking a step sends its routine and step IDs, date, and checked state to Express; SQL inserts or removes that one daily completion row.
 
 ## Stack
 
@@ -55,7 +56,7 @@ Use a phone-first layout with generous white space, a quiet warm-neutral palette
 
 ### React screens and shared state
 
-Home/saved routines, questionnaire, product list and product detail, suggestions, and routine detail. Shared state comes from API responses; the browser is not the source of truth for saved data.
+Home, saved-routine library, questionnaire, product list and product detail, suggestions, and routine detail. The library opens, edits, and deletes saved routines. Shared state comes from API responses; the browser is not the source of truth for saved data.
 
 PRD ref: `prd.md > Home and Saved Routines`, `Questionnaire and Routine Suggestions`, `Product List`, and `Routine Details`.
 
@@ -69,7 +70,9 @@ Validate request fields, call the matching/data modules, and return JSON. Routes
 | `GET /api/owned-products` / `POST /api/owned-products` / `DELETE /api/owned-products/:id` | Read, add, or remove an owned item and its optional expiry date. |
 | `GET /api/profile` / `PUT /api/profile` | Read or save questionnaire preferences on this device. |
 | `POST /api/suggestions` | Return eligible routine options for selected concerns, products, and schedule. Does not save them. |
-| `GET /api/routines` / `POST /api/routines` / `GET /api/routines/:id` | List, save a chosen suggestion, and reopen a saved routine. |
+| `GET /api/routines` / `POST /api/routines` / `GET /api/routines/:id?date=YYYY-MM-DD&weekStart=YYYY-MM-DD` | List, save a chosen suggestion, and reopen a saved routine with checklist progress. |
+| `PUT /api/routines/:id` / `DELETE /api/routines/:id` | Regenerate and replace a saved routine, or remove it and its dependent steps/progress. |
+| `PUT /api/routines/:id/checklist` | Save or clear completion for one step on one date; returns step and weekly completion progress. |
 
 ### Recommendation rules
 
@@ -85,7 +88,7 @@ The API opens the local SQLite file and uses parameterized SQL queries. A small 
 
 ## Data Model
 
-SQLite stores five tables. `id` values are local integer primary keys; foreign keys are enabled. Concern lists and product tags are JSON text for this small POC, while owned items and routine steps use relational rows so the learner can practise joins.
+SQLite stores six tables. `id` values are local integer primary keys; foreign keys are enabled. Concern lists and product tags are JSON text for this small POC, while owned items and routine steps use relational rows so the learner can practise joins.
 
 | Table | Important fields | Relationship and behavior |
 |---|---|---|
@@ -93,9 +96,10 @@ SQLite stores five tables. `id` values are local integer primary keys; foreign k
 | `owned_products` | `id`, `catalog_product_id`, `expires_on` (nullable), `added_at` | One row per item the person owns; several owned items may point to one catalog product. Missing expiry stays eligible and is labelled. Past expiry is filtered at suggestion time. |
 | `profile_preferences` | fixed `id = 1`, `skin_type`, `concerns_json`, `preferred_period`, `preferred_time`, `uses_per_week`, `updated_at` | Single-device questionnaire answers. The one-row design reflects a no-account demo. |
 | `routines` | `id`, `period`, `preferred_time`, `uses_per_week`, `concerns_json`, `fit_score`, `created_at` | Each chosen suggestion is saved as one routine. |
-| `routine_steps` | `id`, `routine_id`, `owned_product_id`, `step_order`, `purpose_text` | Ordered product references for a routine; foreign keys prevent dangling steps. |
+| `routine_steps` | `id`, `routine_id`, `product_id`, `step_order`, `product_snapshot_json` | Ordered product snapshots for a routine. |
+| `routine_step_completions` | `step_id`, `completed_on`, `completed_at` | One row per completed step per date. The `(step_id, completed_on)` primary key prevents duplicate checkmarks; deleting a routine step cascades to its completion history; deleting a saved routine cascades through its steps and their completion history. Editing replaces the saved steps and clears that routine’s completion history. |
 
-Removing an owned item referenced by a saved routine should not silently erase routine history: block removal with a clear message for the POC, or remove the item only after the person confirms. Closing the browser leaves data in SQLite. There is no sync or backup in this POC.
+Removing an owned item referenced by a saved routine should not silently erase routine history: block removal with a clear message for the POC, or remove the item only after the person confirms. Closing the browser leaves data in SQLite. Checklist dates use the browser device’s local calendar date, passed to the API and stored as `YYYY-MM-DD`; a later date naturally starts with no checked steps. A weekly count includes dates where every step was completed and resets at the start of a new Monday-to-Sunday week; the routine’s `uses_per_week` value is its target. There is no sync or backup in this POC.
 
 ## File Structure
 
