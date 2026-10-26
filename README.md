@@ -1,5 +1,12 @@
 # Skincare Routine Personaliser (Skin Notes)
 
+## Demo
+
+
+https://github.com/user-attachments/assets/ea945a86-9fce-4730-a195-69589057666b
+
+
+
 ## Run locally
 
 Requirements: Node.js 22.12 or newer and npm.
